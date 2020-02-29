@@ -15,15 +15,14 @@ To better suit your OS target, it is recomended to build these applications from
 
 To build the server component follow the command bellow from project root.
 ```
-cd server
 go get
-bash bin/build.sh
+bash build/server.sh
 ```
 
-The `go build` command will automatically build a binary for your current OS. Said binary will be located in the `server/dist` directory.
+The `go build` command will automatically build a binary for your current OS. Said binary will be located in the `dist` directory.
 
 ## Downloads
-Currently there is only one distribution available for linux x84-64 arch located in `server/dist`.
+Currently there is only one distribution available for linux x84-64 arch located in `dist`.
 
 ## Running the server
 
