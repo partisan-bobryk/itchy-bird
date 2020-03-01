@@ -25,14 +25,16 @@ func StartServer() {
 		return
 	}
 
+	apiHandler := &ApiRouteHandlers{binaryRepo}
+
 	router := mux.NewRouter()
 
 	// Register Middleware
 	router.Use(LoggingMiddleware)
 
 	// Register Routes
-	router.HandleFunc("/versions", GeVersionsHandler).Methods("GET")
-	router.HandleFunc("/download", DownloadHandler).Methods("GET")
+	router.HandleFunc("/versions", apiHandler.GeVersionsHandler).Methods("GET")
+	router.HandleFunc("/download", apiHandler.DownloadHandler).Methods("GET")
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:8080",
@@ -45,6 +47,7 @@ func StartServer() {
 
 	// Start go server
 	go func() {
+		log.Printf("Starting server on port %s \n", 8080)
 		if err := srv.ListenAndServe(); err != nil {
 			log.Println(err)
 		}

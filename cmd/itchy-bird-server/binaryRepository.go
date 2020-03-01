@@ -1,15 +1,44 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 )
 
-const DEFAULT_FILE_PATH = "/downloads/*"
+type HashedFile struct {
+	Name string `json:"name"`
+	Hash string `json:"hash"`
+}
 
 type BinaryRepository interface {
-	GetListOfBinaries() (error, []string)
+	GetListOfBinaries() ([]string, error)
+	GetBinaryHash(fileName string) (HashedFile, error)
+}
+
+// Constructor
+func MakeLocalBinaryRepository(downloadLocation string) (*LocalBinaryRepository, error) {
+	// Check for existance of local dir
+	if _, err := os.Stat(downloadLocation); os.IsNotExist(err) {
+		log.Printf("Could not find path %s, creating one...", downloadLocation)
+		mkdirErr := os.Mkdir(downloadLocation, 0777)
+
+		if mkdirErr != nil {
+			log.Print("Failed!\n")
+			log.Println(mkdirErr)
+			return nil, mkdirErr
+		}
+
+		log.Print("Success!")
+	}
+
+	return &LocalBinaryRepository{
+		downloadLocation: downloadLocation,
+		isReady:          true,
+	}, nil
 }
 
 type LocalBinaryRepository struct {
@@ -18,23 +47,46 @@ type LocalBinaryRepository struct {
 }
 
 func (repo *LocalBinaryRepository) GetListOfBinaries() ([]string, error) {
-	return nil, nil
-}
+	fileList := []string{}
+	dirList, readDirErr := ioutil.ReadDir(repo.downloadLocation)
 
-func MakeLocalBinaryRepository(downloadLocation string) (*LocalBinaryRepository, error) {
-	// Check for existance of local dir
-	if _, err := os.Stat(downloadLocation); os.IsNotExist(err) {
-		log.Printf("Could not find path %s, creating one...", downloadLocation)
-		mkdirErr := os.Mkdir(downloadLocation, os.ModeDir)
-
-		if mkdirErr != nil {
-			log.Printf("Failed creating %s", downloadLocation)
-			return nil, mkdirErr
-		}
+	if readDirErr != nil {
+		return nil, readDirErr
 	}
 
-	return &LocalBinaryRepository{
-		downloadLocation: downloadLocation,
-		isReady:          true,
-	}, nil
+	for _, dirEntity := range dirList {
+		// We should skip over any directories
+		if dirEntity.IsDir() == true {
+			continue
+		}
+
+		fileList = append(fileList, dirEntity.Name())
+	}
+
+	return fileList, nil
+}
+
+func (repo *LocalBinaryRepository) GetBinaryHash(fileName string) (HashedFile, error) {
+	hashedFile := HashedFile{
+		Name: fileName,
+	}
+	log.Printf("Attempting to load %s...", fileName)
+	file, fileOpenErr := os.Open(fileName)
+	defer file.Close()
+
+	if fileOpenErr != nil {
+		log.Println("Failed!")
+		return hashedFile, fileOpenErr
+	}
+
+	log.Println("Success!")
+	hash := sha256.New()
+	if _, copyFileErr := io.Copy(hash, file); copyFileErr != nil {
+		return hashedFile, copyFileErr
+	}
+
+	// Convert a byte array into string
+	hashedFile.Hash = hex.EncodeToString(hash.Sum(nil))
+
+	return hashedFile, nil
 }
