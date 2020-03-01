@@ -68,7 +68,3 @@ func StartServer() {
 	log.Println("Server shutting down")
 	os.Exit(0)
 }
-
-func MakeDownloadHandler(binRepo *BinaryRepository) http.Handler {
-
-}
