@@ -17,6 +17,7 @@ type HashedFile struct {
 type BinaryRepository interface {
 	GetListOfBinaries() ([]string, error)
 	GetBinaryHash(fileName string) (HashedFile, error)
+	GetFile(fileName string) (*os.File, error)
 }
 
 // Constructor
@@ -71,15 +72,15 @@ func (repo *LocalBinaryRepository) GetBinaryHash(fileName string) (HashedFile, e
 		Name: fileName,
 	}
 	log.Printf("Attempting to load %s...", fileName)
-	file, fileOpenErr := os.Open(fileName)
+	file, fileOpenErr := os.Open(repo.downloadLocation + "/" + fileName)
 	defer file.Close()
 
 	if fileOpenErr != nil {
-		log.Println("Failed!")
+		log.Print("Failed!\n")
 		return hashedFile, fileOpenErr
 	}
 
-	log.Println("Success!")
+	log.Print("Success!\n")
 	hash := sha256.New()
 	if _, copyFileErr := io.Copy(hash, file); copyFileErr != nil {
 		return hashedFile, copyFileErr
@@ -89,4 +90,11 @@ func (repo *LocalBinaryRepository) GetBinaryHash(fileName string) (HashedFile, e
 	hashedFile.Hash = hex.EncodeToString(hash.Sum(nil))
 
 	return hashedFile, nil
+}
+
+func (repo *LocalBinaryRepository) GetFile(fileName string) (*os.File, error) {
+	// TODO Locate the file
+	log.Printf("Attempting to load %s...", fileName)
+	return os.Open(repo.downloadLocation + "/" + fileName)
+
 }

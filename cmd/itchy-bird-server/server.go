@@ -34,7 +34,7 @@ func StartServer() {
 
 	// Register Routes
 	router.HandleFunc("/versions", apiHandler.GeVersionsHandler).Methods("GET")
-	router.HandleFunc("/download", apiHandler.DownloadHandler).Methods("GET")
+	router.HandleFunc("/download/{fileName}", apiHandler.DownloadHandler).Methods("POST")
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:8080",
@@ -47,7 +47,7 @@ func StartServer() {
 
 	// Start go server
 	go func() {
-		log.Printf("Starting server on port %s \n", 8080)
+		log.Printf("Starting server on port %s \n", "8080")
 		if err := srv.ListenAndServe(); err != nil {
 			log.Println(err)
 		}

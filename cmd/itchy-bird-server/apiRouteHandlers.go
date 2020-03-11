@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type ApiRouteHandlers struct {
@@ -11,16 +14,15 @@ type ApiRouteHandlers struct {
 }
 
 func (api *ApiRouteHandlers) GeVersionsHandler(res http.ResponseWriter, req *http.Request) {
-	res.WriteHeader(http.StatusOK)
 	res.Header().Set("Content-Type", "application/json")
 
 	listOfHashedFiles := []HashedFile{}
 
 	fileList, fileListError := api.binaryRepository.GetListOfBinaries()
 	if fileListError != nil {
-		// Inform logs
 		log.Println(fileListError)
 		// Hard Error! If we can't read the directory this should inform the client
+		res.WriteHeader(http.StatusInternalServerError)
 		pyld := ResponsePayload{http.StatusInternalServerError, fileListError}
 		json.NewEncoder(res).Encode(pyld)
 		return
@@ -39,16 +41,30 @@ func (api *ApiRouteHandlers) GeVersionsHandler(res http.ResponseWriter, req *htt
 		listOfHashedFiles = append(listOfHashedFiles, hashedFile)
 	}
 
+	res.WriteHeader(http.StatusOK)
 	pyld := ResponsePayload{Status: http.StatusOK, Data: listOfHashedFiles}
 	json.NewEncoder(res).Encode(pyld)
 }
 
 func (api *ApiRouteHandlers) DownloadHandler(res http.ResponseWriter, req *http.Request) {
+	filename := mux.Vars(req)["fileName"]
+
+	file, fileError := api.binaryRepository.GetFile(filename)
+	defer file.Close()
+
+	if fileError != nil {
+		log.Println(fileError)
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(http.StatusNotFound)
+		pyld := ResponsePayload{Status: http.StatusNotFound, Data: fileError}
+		json.NewEncoder(res).Encode(pyld)
+		return
+	}
+
+	// Set header so that client can expect a binary
+	res.Header().Set("Content-Type", "application/octet-stream")
+	res.Header().Set("Content-Disposition", "attachment; filename="+filename)
+
 	res.WriteHeader(http.StatusOK)
-
-	// TMP
-	res.Header().Set("Content-Type", "application/json")
-	pyld := ResponsePayload{Status: http.StatusOK, Data: "Looking good!"}
-
-	json.NewEncoder(res).Encode(pyld)
+	io.Copy(res, file)
 }
