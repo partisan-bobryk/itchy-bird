@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	localBinRepo "github.com/VeprUA/itchy-bird/pkg/localbinaryrepository"
+
 	"github.com/gorilla/mux"
 )
 
@@ -16,15 +18,14 @@ type ApiRouteHandlers struct {
 func (api *ApiRouteHandlers) GeVersionsHandler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
-	listOfHashedFiles := []HashedFile{}
+	listOfHashedFiles := []localBinRepo.HashedFile{}
 
 	fileList, fileListError := api.binaryRepository.GetListOfBinaries()
 	if fileListError != nil {
 		log.Println(fileListError)
 		// Hard Error! If we can't read the directory this should inform the client
 		res.WriteHeader(http.StatusInternalServerError)
-		pyld := ResponsePayload{http.StatusInternalServerError, fileListError}
-		json.NewEncoder(res).Encode(pyld)
+		json.NewEncoder(res).Encode(fileListError)
 		return
 	}
 
@@ -42,8 +43,7 @@ func (api *ApiRouteHandlers) GeVersionsHandler(res http.ResponseWriter, req *htt
 	}
 
 	res.WriteHeader(http.StatusOK)
-	pyld := ResponsePayload{Status: http.StatusOK, Data: listOfHashedFiles}
-	json.NewEncoder(res).Encode(pyld)
+	json.NewEncoder(res).Encode(listOfHashedFiles)
 }
 
 func (api *ApiRouteHandlers) DownloadHandler(res http.ResponseWriter, req *http.Request) {
@@ -56,8 +56,7 @@ func (api *ApiRouteHandlers) DownloadHandler(res http.ResponseWriter, req *http.
 		log.Println(fileError)
 		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(http.StatusNotFound)
-		pyld := ResponsePayload{Status: http.StatusNotFound, Data: fileError}
-		json.NewEncoder(res).Encode(pyld)
+		json.NewEncoder(res).Encode(fileError)
 		return
 	}
 

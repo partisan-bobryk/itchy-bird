@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"time"
 
+	localBinRepo "github.com/VeprUA/itchy-bird/pkg/localbinaryrepository"
 	"github.com/gorilla/mux"
 )
 
@@ -18,7 +19,7 @@ func StartServer() {
 	flag.Parse()
 
 	// Figure out where files are located
-	binaryRepo, binaryRepoErr := MakeLocalBinaryRepository(DefaultFilePath)
+	binaryRepo, binaryRepoErr := localBinRepo.MakeLocalBinaryRepository(DefaultFilePath)
 
 	if binaryRepoErr != nil {
 		log.Panic(binaryRepoErr)
